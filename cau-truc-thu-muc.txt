@@ -1,0 +1,59 @@
+my-project/
++--- public/
++--- src/
+|    +--- admin/
+|    |    +--- AnalyticsManager.vue
+|    |    +--- CategoryManager.vue
+|    |    +--- ChatManager.vue
+|    |    +--- DashboardHome.vue
+|    |    +--- NewsManager.vue
+|    |    +--- OrderManager.vue
+|    |    +--- SettingsManager.vue
+|    |    \--- UserManager.vue
+|    +--- assets/
+|    +--- backend/
+|    |    +--- routes/
+|    |    |    +--- admin.js
+|    |    |    +--- auth.js
+|    |    |    +--- orders.js
+|    |    |    \--- ...
+|    |    \--- server.js
+|    +--- components/
+|    |    +--- AddCardView.vue
+|    |    +--- Cart.vue
+|    |    +--- CartView.vue
+|    |    +--- ChatDropdown.vue
+|    |    +--- CheckoutView.vue
+|    |    +--- DetailView.vue
+|    |    +--- Footer.vue
+|    |    +--- Header.vue
+|    |    +--- HomeView.vue
+|    |    +--- LoginView.vue
+|    |    +--- NotificationDropdown.vue
+|    |    +--- PaymentSuccess.vue
+|    |    +--- ProductsView.vue
+|    |    +--- ProfileView.vue
+|    |    +--- QrConfirm.vue
+|    |    +--- QrPayment.vue
+|    |    \--- RegisterView.vue
+|    +--- data/
+|    +--- layouts/
+|    |    \--- DashboardLayout.vue
+|    +--- router/
+|    |    \--- index.js
+|    +--- store/
+|    |    +--- app.js
+|    |    +--- auth.js
+|    |    \--- cart.js
+|    +--- views/
+|    +--- App.vue
+|    \--- main.js
++--- .gitignore
++--- README.md
++--- babel.config.js
++--- jsconfig.json
++--- postcss.config.js
++--- tailwind.config.js
++--- package.json
++--- package-lock.json
+\--- vue.config.js
