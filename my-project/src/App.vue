@@ -1,5 +1,6 @@
 <template>
   <div class="relative min-h-screen font-[Palatino,serif]">
+    <ToastNotification />
     <router-view/>
     
     <!-- Floating Bubble -->
@@ -73,6 +74,7 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
+import ToastNotification from './components/ToastNotification.vue';
 import { useAuthStore } from './store/auth';
 
 const authStore = useAuthStore();

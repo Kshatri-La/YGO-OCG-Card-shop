@@ -3,9 +3,29 @@
     <Header />
 
     <main class="flex-grow container mx-auto px-4 py-8">
-      <h2 class="text-3xl font-black italic tracking-widest mb-8 flex items-center gap-3 text-[#f0d467] border-b-2 border-[#a2743a] pb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
+      <h2 class="text-3xl font-black italic tracking-widest flex items-center gap-3 text-[#f0d467] border-b-2 border-[#a2743a] pb-2 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">
          ✦ Tất cả Thẻ bài ✦
       </h2>
+
+      <!-- Category Filter Dropdown -->
+      <div class="flex items-center gap-3 mb-8 mt-6">
+        <label class="text-[#e2c76b] font-bold text-sm tracking-widest uppercase whitespace-nowrap">Bộ lọc Nhóm:</label>
+        <div class="relative w-64">
+          <select 
+            v-model="selectedCategory" 
+            @change="currentPage = 1"
+            class="w-full appearance-none bg-[#1a0e08] text-[#f5deb3] border border-[#a2743a] rounded-sm px-4 py-2 pr-8 text-sm font-bold tracking-widest uppercase focus:outline-none focus:border-[#f0d467] cursor-pointer shadow-[0_2px_5px_rgba(0,0,0,0.5)] transition"
+          >
+            <option :value="null">-- TẤT CẢ SẢN PHẨM --</option>
+            <option v-for="cat in flatCategories" :key="cat.id" :value="cat.id">
+              {{ cat.name }}
+            </option>
+          </select>
+          <div class="absolute inset-y-0 right-0 flex items-center px-3 pointer-events-none text-[#a2743a]">
+            ▼
+          </div>
+        </div>
+      </div>
 
       <div v-if="loading" class="text-center py-10 text-2xl animate-pulse text-[#e2c76b] tracking-widest">Đang tải Dữ liệu...</div>
       
@@ -90,6 +110,8 @@ import Header from '../components/Header.vue';
 import Footer from '../components/Footer.vue';
 
 const cards = ref([]);
+const flatCategories = ref([]);
+const selectedCategory = ref(null);
 const loading = ref(true);
 const cartStore = useCartStore();
 const appStore = useAppStore();
@@ -97,6 +119,7 @@ const toastMsg = ref('');
 
 const itemsPerPage = 4;
 const currentPage = ref(1);
+
 
 const showToast = (msg) => {
   toastMsg.value = msg;
@@ -107,6 +130,18 @@ const filteredCards = computed(() => {
   // Sắp xếp ID giảm dần (Mới nhất trước)
   let sorted = [...cards.value].sort((a, b) => b.id - a.id);
   
+  // Filter theo Category
+  if (selectedCategory.value !== null) {
+    sorted = sorted.filter(card => {
+      // Nếu category được chọn là cha, thì lấy cả con của nó
+      const selectedCat = flatCategories.value.find(c => c.id === selectedCategory.value);
+      if (selectedCat && selectedCat.childrenIds) {
+        return card.category_id === selectedCategory.value || selectedCat.childrenIds.includes(card.category_id);
+      }
+      return card.category_id === selectedCategory.value;
+    });
+  }
+
   if (appStore.searchQuery) {
     const q = appStore.searchQuery.toLowerCase();
     sorted = sorted.filter(card => 
@@ -156,8 +191,24 @@ const formatPrice = (price) => {
 
 const fetchCards = async () => {
   try {
-    const response = await axios.get('/api/cards');
-    cards.value = response.data;
+    const [cardsRes, catsRes] = await Promise.all([
+      axios.get('/api/cards'),
+      axios.get('/api/categories', { withCredentials: true })
+    ]);
+    cards.value = cardsRes.data;
+    
+    // Đổ phẳng cây category để làm nút filter dễ dàng (chỉ lấy root và gộp các ID con)
+    const flats = [];
+    catsRes.data.forEach(rootCat => {
+      const childrenIds = rootCat.children ? rootCat.children.map(c => c.id) : [];
+      flats.push({ ...rootCat, childrenIds });
+      if (rootCat.children) {
+        rootCat.children.forEach(child => {
+           flats.push({ ...child, name: `↳ ${child.name}` });
+        });
+      }
+    });
+    flatCategories.value = flats;
   } catch (error) {
     console.error("Lỗi lấy data:", error);
   } finally {

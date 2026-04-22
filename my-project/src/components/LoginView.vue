@@ -68,11 +68,13 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { useAuthStore } from '../store/auth';
+import { useToastStore } from '../store/toast';
 import Header from './Header.vue';
 import Footer from './Footer.vue';
 
 const router = useRouter();
 const authStore = useAuthStore();
+const toastStore = useToastStore();
 
 const showForgotPassword = ref(false);
 const resetUsername = ref('');
@@ -113,7 +115,7 @@ const handleResetPassword = async () => {
       username: resetUsername.value,
       newPassword: resetPassword.value
     });
-    alert(response.data.message);
+    toastStore.addToast(response.data.message, 'success');
     showForgotPassword.value = false;
     resetUsername.value = '';
     resetPassword.value = '';

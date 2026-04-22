@@ -44,7 +44,7 @@
               </button>
               <NotificationDropdown 
                 v-if="showNotif" 
-                :notifications="notifications" 
+                :notifications="notificationStore.notifications" 
                 @close="showNotif = false"
                 @mark-read="markNotifRead"
               />
@@ -89,19 +89,23 @@ import { useRouter, useRoute } from 'vue-router';
 import { useCartStore } from '../store/cart';
 import { useAppStore } from '../store/app';
 import { useAuthStore } from '../store/auth';
+import { useNotificationStore } from '../store/notification';
 import ChatDropdown from './ChatDropdown.vue';
 import NotificationDropdown from './NotificationDropdown.vue';
 
 const cartStore = useCartStore();
 const appStore = useAppStore();
 const authStore = useAuthStore();
+const notificationStore = useNotificationStore();
 const router = useRouter();
 const route = useRoute();
 
 const showChat = ref(false);
 const showNotif = ref(false);
 const showProfileMenu = ref(false);
-const unreadChatCount = ref(5); // Có 5 tin mới chưa đọc
+
+// Tạm thời không đếm số lượng tin nhắn chưa đọc từ Header (sẽ hiển thị chấm đỏ bên trong ChatDropdown khi mở lên)
+const unreadChatCount = ref(0);
 
 
 const toggleChat = () => {
@@ -112,21 +116,7 @@ const toggleChat = () => {
   }
 };
 
-const notifications = ref([
-  {
-    id: 1, type: 'RESTOCK HÀNG HIẾM', title: 'Blue-Eyes White Dragon vừa về hàng!',
-    description: 'Thẻ Rồng Trắng Mắt Xanh (Secret Rare) vừa cập bến kho. Số lượng cực kỳ có hạn, nhanh tay săn ngay.',
-    image: 'https://upload.wikimedia.org/wikipedia/en/2/2b/Yugioh_Card_Back.jpg',
-    time: '2 phút trước', read: false, showDetails: false, actionLink: '/card/1'
-  },
-  {
-    id: 2, type: 'HỆ THỐNG', title: 'Bảo trì máy chủ V2',
-    description: 'Bảo trì thành công hệ thống lên chuẩn V2. Server port 8080 bắt đầu đi vào hoạt động trơn tru.',
-    time: '1 giờ trước', read: true, showDetails: false
-  }
-]);
-
-const unreadNotifCount = computed(() => notifications.value.filter(n => !n.read).length);
+const unreadNotifCount = computed(() => notificationStore.unreadCount);
 
 const toggleNotif = () => {
   showNotif.value = !showNotif.value;
@@ -140,8 +130,7 @@ const handleLogout = async () => {
 };
 
 const markNotifRead = (id) => {
-  const notif = notifications.value.find(n => n.id === id);
-  if (notif) notif.read = true;
+  notificationStore.markAsRead(id);
 };
 
 watch(() => appStore.searchQuery, (newVal) => {

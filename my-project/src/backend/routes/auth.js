@@ -70,6 +70,11 @@ module.exports = (db) => {
             const updateSql = "UPDATE users SET password = ? WHERE username = ?";
             db.query(updateSql, [newPassword, username], (err, result) => {
                 if (err) return res.status(500).json({ error: "Không thể đổi mật khẩu" });
+                
+                // Ghi log
+                db.query("INSERT INTO security_logs (event, username, ip_address, severity) VALUES (?, ?, ?, ?)",
+                    ["Reset mật khẩu", username, req.ip || req.connection.remoteAddress, "high"]);
+
                 res.json({ message: "Mật khẩu đã được thiết lập lại thành công!" });
             });
         });
@@ -97,6 +102,11 @@ module.exports = (db) => {
             const updateSql = "UPDATE users SET password = ? WHERE id = ?";
             db.query(updateSql, [newPassword, userId], (err, result) => {
                 if (err) return res.status(500).json({ error: "Không thể lưu mật khẩu mới" });
+
+                // Ghi log
+                db.query("INSERT INTO security_logs (event, username, ip_address, severity) VALUES (?, ?, ?, ?)",
+                    ["Thay đổi mật khẩu", user.username, req.ip || req.connection.remoteAddress, "medium"]);
+
                 res.json({ message: "Đổi mật khẩu bảo mật thành công!" });
             });
         });
@@ -146,6 +156,11 @@ module.exports = (db) => {
             const insertSql = "INSERT INTO users (username, email, password, full_name, role) VALUES (?, ?, ?, ?, 'customer')";
             db.query(insertSql, [username, email, password, full_name], (err, result) => {
                 if (err) return res.status(500).json({ error: "Không thể tạo tài khoản" });
+
+                // Ghi log
+                db.query("INSERT INTO security_logs (event, username, ip_address, severity) VALUES (?, ?, ?, ?)",
+                    ["Đăng ký tài khoản mới", username, req.ip || req.connection.remoteAddress, "low"]);
+
                 res.json({ message: "Đăng ký thành công! Chào mừng Khách hàng." });
             });
         });

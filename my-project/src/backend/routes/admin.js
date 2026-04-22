@@ -58,6 +58,44 @@ module.exports = (db) => {
         });
     });
 
+    // API CẬP NHẬT THẺ BÀI (Chỉ Admin/Moder)
+    router.put('/cards/:id', upload.single('image'), (req, res) => {
+        const id = req.params.id;
+        const { 
+            name, card_code, price, pack_name, series, rarity, 
+            image_url, stock_quantity, description 
+        } = req.body;
+
+        let finalImageUrl = image_url;
+        if (req.file) {
+            finalImageUrl = `/uploads/${req.file.filename}`;
+        }
+
+        const sql = `
+            UPDATE cards SET 
+            name = ?, card_code = ?, price = ?, pack_name = ?, series = ?, 
+            rarity = ?, image_url = ?, stock_quantity = ?, description = ?
+            WHERE id = ?
+        `;
+        const values = [
+            name, card_code, price || 0, pack_name, series, rarity, 
+            finalImageUrl, stock_quantity || 0, description, id
+        ];
+
+        db.query(sql, values, (err, result) => {
+            if (err) {
+                if(err.code === 'ER_DUP_ENTRY') {
+                    return res.status(400).json({ error: "Mã Card này đã tồn tại trong hệ thống." });
+                }
+                return res.status(500).json({ error: "Lỗi Server MySQL: " + err.message });
+            }
+            if (result.affectedRows === 0) {
+                return res.status(404).json({ error: "Không tìm thấy thẻ bài với ID này." });
+            }
+            res.json({ message: "Cập nhật thẻ bài thành công" });
+        });
+    });
+
     // API XÓA THẺ BÀI (Chỉ Admin/Moder)
     router.delete('/cards/:id', (req, res) => {
         const id = req.params.id;
@@ -132,6 +170,15 @@ module.exports = (db) => {
         db.query("UPDATE users SET role = ? WHERE id = ?", [role, userId], (err) => {
             if (err) return res.status(500).json({ error: "Lỗi cập nhật phân quyền." });
             res.json({ message: "Cập nhật phân quyền thành công!" });
+        });
+    });
+
+    // API LẤY LOG BẢO MẬT
+    router.get('/security-logs', (req, res) => {
+        const sql = "SELECT * FROM security_logs ORDER BY created_at DESC LIMIT 100";
+        db.query(sql, (err, results) => {
+            if (err) return res.status(500).json({ error: "Lỗi Server MySQL: " + err.message });
+            res.json(results);
         });
     });
 

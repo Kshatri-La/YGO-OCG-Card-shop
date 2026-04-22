@@ -4,7 +4,9 @@
     <aside class="w-64 bg-gradient-to-b from-[#2c180e] to-[#110905] border-r border-[#a2743a] flex flex-col shadow-[4px_0_15px_rgba(0,0,0,0.8)]">
       <div class="p-6 border-b border-[#3f2513] text-center relative overflow-hidden">
         <div class="absolute inset-0 bg-[#a2743a]/10 filter blur-xl border-t border-[#f0d467] opacity-20 pointer-events-none"></div>
-        <h1 class="text-2xl font-black italic tracking-widest text-[#f0d467] drop-shadow-md z-10 relative">COMMAND<br/><span class="text-white text-lg">CENTER</span></h1>
+        <router-link to="/dashboard" class="relative z-10 block hover:scale-105 transition duration-300">
+          <h1 class="text-2xl font-black italic tracking-widest text-[#f0d467] drop-shadow-md">COMMAND<br/><span class="text-white text-lg">CENTER</span></h1>
+        </router-link>
       </div>
       
       <nav class="flex-grow p-4 space-y-2 overflow-y-auto custom-scrollbar">

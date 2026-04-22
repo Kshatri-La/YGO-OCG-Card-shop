@@ -4,13 +4,15 @@
       
       <div class="flex justify-between items-center border-b border-[#a2743a]/50 pb-4 mb-6">
         <h2 class="text-3xl font-black italic tracking-widest text-[#f0d467] drop-shadow-md uppercase">Kho Lưu Trữ Sản Phẩm</h2>
-        <button @click="showAddForm = !showAddForm" class="bg-gradient-to-r from-[#d48135] to-[#85451e] border border-[#f0d467] text-white px-4 py-2 rounded-sm font-bold uppercase hover:brightness-110 shadow-md transition">
-          {{ showAddForm ? 'Đóng form thêm thẻ' : '+ Thêm thẻ bài mới' }}
+        <button @click="toggleForm" class="bg-gradient-to-r from-[#d48135] to-[#85451e] border border-[#f0d467] text-white px-4 py-2 rounded-sm font-bold uppercase hover:brightness-110 shadow-md transition">
+          {{ showAddForm ? 'Đóng form' : '+ Thêm thẻ bài mới' }}
         </button>
       </div>
 
       <div v-if="showAddForm" class="mb-8 border border-[#a2743a]/50 p-6 bg-[#1a0e08]/60 rounded-sm">
-        <h3 class="text-xl font-black italic tracking-widest text-[#f0d467] mb-6 drop-shadow-md text-center uppercase border-b border-[#a2743a]/50 pb-4">Biểu Mẫu Thêm Thẻ Bài</h3>
+        <h3 class="text-xl font-black italic tracking-widest text-[#f0d467] mb-6 drop-shadow-md text-center uppercase border-b border-[#a2743a]/50 pb-4">
+          {{ editingId ? 'Sửa Thông Tin Thẻ Bài' : 'Biểu Mẫu Thêm Thẻ Bài' }}
+        </h3>
         
         <form @submit.prevent="submitCard" class="space-y-4">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -56,9 +58,14 @@
             </div>
           </div>
           
-          <button type="submit" :disabled="isSubmitting" class="w-full mt-6 bg-gradient-to-r from-[#d48135] via-[#a2743a] to-[#85451e] border border-[#f0d467] text-white py-3 rounded-sm font-black tracking-widest uppercase shadow-[0_4px_10px_rgba(0,0,0,0.8)] hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed">
-            {{ isSubmitting ? 'ĐANG KHẮC ẤN...' : 'TẠO MÃ BÀI VÀO HỆ THỐNG' }}
-          </button>
+          <div class="flex gap-4 mt-6">
+            <button v-if="editingId" @click="cancelEdit" type="button" class="w-1/3 bg-gray-600 border border-gray-400 text-white py-3 rounded-sm font-black tracking-widest uppercase shadow hover:brightness-110 transition disabled:opacity-50">
+              HUỶ BỎ
+            </button>
+            <button type="submit" :disabled="isSubmitting" :class="editingId ? 'w-2/3' : 'w-full'" class="bg-gradient-to-r from-[#d48135] via-[#a2743a] to-[#85451e] border border-[#f0d467] text-white py-3 rounded-sm font-black tracking-widest uppercase shadow-[0_4px_10px_rgba(0,0,0,0.8)] hover:brightness-110 transition disabled:opacity-50 disabled:cursor-not-allowed">
+              {{ isSubmitting ? 'ĐANG KHẮC ẤN...' : (editingId ? 'CẬP NHẬT THÔNG TIN' : 'TẠO MÃ BÀI VÀO HỆ THỐNG') }}
+            </button>
+          </div>
         </form>
         <p v-if="successMsg" class="mt-4 text-green-400 font-bold text-center">{{ successMsg }}</p>
         <p v-if="errorMsg" class="mt-4 text-red-500 font-bold text-center">{{ errorMsg }}</p>
@@ -86,7 +93,8 @@
               <td class="px-4 py-2 border-r border-[#3f2513] font-mono text-[#a2743a]">{{ c.card_code }}</td>
               <td class="px-4 py-2 border-r border-[#3f2513] text-center font-bold text-lg" :class="c.stock_quantity > 0 ? 'text-green-400' : 'text-red-500'">{{ c.stock_quantity }}</td>
               <td class="px-4 py-2 border-r border-[#3f2513] text-right text-[#d48135] font-black">{{ formatPrice(c.price) }}</td>
-              <td class="px-4 py-2 text-center">
+              <td class="px-4 py-2 text-center space-x-2">
+                <button @click="editCard(c)" class="text-blue-400 hover:text-blue-300 font-black text-xs uppercase underline drop-shadow-md">Sửa</button>
                 <button @click="deleteCard(c.id)" class="text-red-500 hover:text-red-400 font-black text-xs uppercase underline drop-shadow-md">Xoá</button>
               </td>
             </tr>
@@ -97,13 +105,28 @@
         </table>
       </div>
     </div>
+
+    <!-- Custom Confirm Modal -->
+    <div v-if="showConfirmModal" class="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4">
+      <div class="bg-gradient-to-br from-[#2c180e] to-[#110905] border-[2px] border-[#a2743a] p-6 max-w-sm w-full rounded-sm shadow-[0_10px_30px_rgba(0,0,0,1)] text-center">
+        <div class="text-4xl mb-4 text-red-500 font-black">⚠️</div>
+        <h3 class="text-xl font-black italic tracking-widest text-[#f0d467] uppercase mb-4">Xác nhận xóa</h3>
+        <p class="text-[#f5deb3] mb-6">Bạn có chắc chắn muốn huỷ bỏ thẻ bài này khỏi hệ thống không?</p>
+        <div class="flex gap-4 justify-center">
+          <button @click="showConfirmModal = false" class="px-5 py-2 text-[#a2743a] font-bold uppercase tracking-widest text-xs border border-[#3f2513] hover:bg-[#3f2513] transition rounded-sm">Hủy</button>
+          <button @click="executeDelete" class="px-5 py-2 bg-red-900/80 hover:bg-red-700 text-white font-bold uppercase tracking-widest text-xs border border-red-800 transition rounded-sm shadow-md">Đồng ý</button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
+import { useToastStore } from '../store/toast';
 
+const toastStore = useToastStore();
 const showAddForm = ref(false);
 const cardsList = ref([]);
 
@@ -125,6 +148,34 @@ const fileInputRef = ref(null);
 const successMsg = ref('');
 const errorMsg = ref('');
 const isSubmitting = ref(false);
+const editingId = ref(null);
+const showConfirmModal = ref(false);
+const cardToDelete = ref(null);
+
+const cancelEdit = () => {
+  editingId.value = null;
+  card.value = getInitialCardState();
+  if (fileInputRef.value) fileInputRef.value.value = '';
+  imageFile.value = null;
+  successMsg.value = '';
+  errorMsg.value = '';
+};
+
+const toggleForm = () => {
+  if (showAddForm.value) {
+    showAddForm.value = false;
+    cancelEdit();
+  } else {
+    showAddForm.value = true;
+  }
+};
+
+const editCard = (c) => {
+  editingId.value = c.id;
+  card.value = { ...c };
+  showAddForm.value = true;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+};
 
 const fetchCards = async () => {
   try {
@@ -148,13 +199,22 @@ const formatPrice = (price) => {
   return `${formatted}đ`;
 };
 
-const deleteCard = async (id) => {
-  if (!confirm("Bạn có chắc chắn muốn huỷ bỏ thẻ bài này khỏi hệ thống?")) return;
+const deleteCard = (id) => {
+  cardToDelete.value = id;
+  showConfirmModal.value = true;
+};
+
+const executeDelete = async () => {
+  if (!cardToDelete.value) return;
   try {
-    await axios.delete(`/api/admin/cards/${id}`);
+    await axios.delete(`/api/admin/cards/${cardToDelete.value}`);
+    toastStore.addToast('Đã xóa thẻ bài thành công', 'success');
     await fetchCards();
   } catch (error) {
-    alert("Lỗi khi xoá thẻ bài: " + (error.response?.data?.error || error.message));
+    toastStore.addToast("Lỗi khi xoá thẻ bài: " + (error.response?.data?.error || error.message), 'error');
+  } finally {
+    showConfirmModal.value = false;
+    cardToDelete.value = null;
   }
 };
 
@@ -183,20 +243,20 @@ const submitCard = async () => {
       formData.append('image', imageFile.value);
     }
 
-    await axios.post('/api/admin/cards', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    });
-
-    successMsg.value = 'Lá bài đã được lưu vào hệ thống dữ liệu thành công!';
+    if (editingId.value) {
+      await axios.put(`/api/admin/cards/${editingId.value}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      successMsg.value = 'Cập nhật thông tin thẻ bài thành công!';
+    } else {
+      await axios.post('/api/admin/cards', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      successMsg.value = 'Lá bài đã được lưu vào hệ thống dữ liệu thành công!';
+    }
     
     // Khôi phục
-    card.value = getInitialCardState();
-    imageFile.value = null;
-    if (fileInputRef.value) {
-      fileInputRef.value.value = '';
-    }
+    cancelEdit();
     
     // Ẩn form và tải lại kho
     showAddForm.value = false;

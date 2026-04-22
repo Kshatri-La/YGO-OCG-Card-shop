@@ -16,11 +16,16 @@
     </div>
     
     <div v-else class="flex-grow p-4 space-y-4 max-h-64 overflow-y-auto custom-scrollbar bg-[#110905]">
-      <div v-for="msg in messages" :key="msg.id" :class="['flex flex-col', msg.isAdmin ? 'items-start' : 'items-end']">
-        <span class="text-[10px] text-[#a2743a] uppercase font-bold mb-1">{{ msg.isAdmin ? 'TCG Shop' : 'Bạn' }}</span>
+      <!-- Hiện thông báo chào mừng nếu chưa có tin -->
+      <div v-if="!myMessages || myMessages.length === 0" class="text-center text-[#8a7251] text-xs italic mt-4">
+        Hãy bắt đầu trò chuyện với TCG Shop. Admin sẽ phản hồi bạn sớm nhất!
+      </div>
+      
+      <div v-for="msg in myMessages" :key="msg.id" :class="['flex flex-col', msg.sender_username === 'admin' ? 'items-start' : 'items-end']">
+        <span class="text-[10px] text-[#a2743a] uppercase font-bold mb-1">{{ msg.sender_username === 'admin' ? 'TCG Shop' : 'Bạn' }}</span>
         <div :class="[
           'max-w-[85%] p-2 rounded-sm text-sm break-words',
-          msg.isAdmin ? 'bg-[#2c1a10] border border-[#a2743a] text-[#f5deb3]' : 'bg-[#a2743a] text-black font-semibold'
+          msg.sender_username === 'admin' ? 'bg-[#2c1a10] border border-[#a2743a] text-[#f5deb3]' : 'bg-[#a2743a] text-black font-semibold'
         ]">
           {{ msg.text }}
         </div>
@@ -47,38 +52,64 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted, onUnmounted, watch } from 'vue';
 import { useAuthStore } from '../store/auth';
+import axios from 'axios';
 
 /* global defineEmits */
 defineEmits(['close']);
 
 const authStore = useAuthStore();
 const newMessage = ref('');
-const messages = ref([
-  { id: 1, text: 'Chào mừng bạn đến với Yugi-Oh Shop! Chúng tôi có thể giúp gì cho bạn?', isAdmin: true }
-]);
+const myMessages = ref([]);
+let pollInterval = null;
 
-const sendMessage = () => {
-  if (!newMessage.value.trim()) return;
-  
-  messages.value.push({
-    id: Date.now(),
-    text: newMessage.value.trim(),
-    isAdmin: false
-  });
-  
-  newMessage.value = '';
-  
-  // Fake auto-response
-  setTimeout(() => {
-    messages.value.push({
-      id: Date.now() + 1,
-      text: 'Hệ thống đã nhận thông điệp. Admin sẽ trả lời bạn sớm nhất!',
-      isAdmin: true
-    });
-  }, 1000);
+const fetchMessages = async () => {
+  if (!authStore.isAuthenticated || authStore.isAdmin || authStore.isModer) return;
+  const username = authStore.user?.username;
+  try {
+    const res = await axios.get(`/api/chat/messages/${username}`, { withCredentials: true });
+    myMessages.value = res.data;
+  } catch (err) {
+    console.error("Lỗi lấy tin nhắn:", err);
+  }
 };
+
+const sendMessage = async () => {
+  if (!newMessage.value.trim()) return;
+  try {
+    await axios.post('/api/chat/send', { 
+      text: newMessage.value.trim() 
+    }, { withCredentials: true });
+    newMessage.value = '';
+    fetchMessages(); // Lấy tin mới ngay sau khi gửi
+  } catch (err) {
+    console.error("Lỗi gửi tin nhắn:", err);
+  }
+};
+
+onMounted(() => {
+  if (authStore.isAuthenticated && !authStore.isAdmin && !authStore.isModer) {
+    fetchMessages();
+    pollInterval = setInterval(fetchMessages, 3000); // Polling mỗi 3 giây
+  }
+});
+
+onUnmounted(() => {
+  if (pollInterval) clearInterval(pollInterval);
+});
+
+watch(() => authStore.isAuthenticated, (newVal) => {
+  if (newVal && !authStore.isAdmin && !authStore.isModer) {
+    fetchMessages();
+    if (!pollInterval) pollInterval = setInterval(fetchMessages, 3000);
+  } else {
+    if (pollInterval) {
+      clearInterval(pollInterval);
+      pollInterval = null;
+    }
+  }
+});
 </script>
 
 <style scoped>
